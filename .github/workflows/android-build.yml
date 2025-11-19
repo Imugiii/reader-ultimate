@@ -158,7 +158,7 @@ jobs:
           fi
 
       - name: Upload APK artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: koodo-reader-android-${{ steps.find_apk.outputs.build_type }}
           path: ${{ steps.find_apk.outputs.apk_path }}
