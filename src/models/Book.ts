@@ -1,3 +1,5 @@
+import { BookType } from '../modules/common/catalog';
+
 class Book {
   key: string;
   name: string;
@@ -11,6 +13,8 @@ class Book {
   page: number;
   path: string;
   charset: string;
+  bookType?: BookType; // Type de livre (novel ou manga) - détecté automatiquement
+  
   constructor(
     key: string,
     name: string,
@@ -23,7 +27,8 @@ class Book {
     size: number,
     page: number,
     path: string,
-    charset: string
+    charset: string,
+    bookType?: BookType
   ) {
     this.key = key;
     this.name = name;
@@ -37,6 +42,7 @@ class Book {
     this.page = page;
     this.path = path;
     this.charset = charset;
+    this.bookType = bookType;
   }
 }
 

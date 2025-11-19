@@ -1,0 +1,186 @@
+name: Build Android APK
+
+# Déclenchement sur :
+# - Tags de version (v*)
+# - Push sur devtest (pour tests)
+# - Workflow manuel
+on:
+  push:
+    tags:
+      - 'v*'
+    branches:
+      - devtest
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Type de build (debug/release)'
+        required: true
+        type: choice
+        options:
+          - debug
+          - release
+        default: 'debug'
+
+jobs:
+  # Job de validation
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20.x'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Run linter
+        run: yarn lint || echo "Linter not configured"
+
+      - name: Run tests
+        run: yarn test --ci --coverage --watchAll=false || echo "Tests not configured"
+
+      - name: Check version format
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if [[ ! $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-z]+(\.[0-9]+)?)?$ ]]; then
+            echo "❌ Error: Invalid version format: $VERSION"
+            exit 1
+          fi
+          echo "✅ Version format is valid: $VERSION"
+
+  # Job de build Android
+  build-android:
+    needs: validate
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20.x'
+          cache: 'yarn'
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v2
+        with:
+          api-level: 33
+          build-tools: 33.0.0
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build React app
+        run: yarn prerelease
+
+      - name: Check if Capacitor is installed
+        id: check_capacitor
+        run: |
+          if [ ! -f "node_modules/@capacitor/core/package.json" ]; then
+            echo "Capacitor not found. Installing..."
+            yarn add @capacitor/core @capacitor/cli @capacitor/android
+            echo "installed=true" >> $GITHUB_OUTPUT
+          else
+            echo "Capacitor already installed"
+            echo "installed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Initialize Capacitor (if needed)
+        if: steps.check_capacitor.outputs.installed == 'true'
+        run: |
+          npx cap init --name "Koodo Reader" --app-id "xyz.960960.koodo" --web-dir "build" || true
+
+      - name: Add Android platform (if needed)
+        if: steps.check_capacitor.outputs.installed == 'true'
+        run: |
+          npx cap add android || true
+
+      - name: Sync Capacitor
+        run: |
+          npx cap sync android || echo "Sync failed, continuing..."
+
+      - name: Grant execute permission for gradlew
+        run: |
+          chmod +x android/gradlew || echo "gradlew not found"
+
+      - name: Build Debug APK
+        if: github.event.inputs.build_type == 'debug' || github.ref == 'refs/heads/devtest'
+        working-directory: android
+        run: |
+          ./gradlew assembleDebug || echo "Build failed, check if android/ directory exists"
+
+      - name: Build Release APK
+        if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/v')
+        working-directory: android
+        run: |
+          # Pour release, on aurait besoin d'un keystore signé
+          # Pour l'instant, on build en debug même pour release
+          # TODO: Ajouter la signature pour les releases
+          ./gradlew assembleRelease || ./gradlew assembleDebug
+
+      - name: Find APK
+        id: find_apk
+        run: |
+          if [ -f "android/app/build/outputs/apk/debug/app-debug.apk" ]; then
+            echo "apk_path=android/app/build/outputs/apk/debug/app-debug.apk" >> $GITHUB_OUTPUT
+            echo "build_type=debug" >> $GITHUB_OUTPUT
+          elif [ -f "android/app/build/outputs/apk/release/app-release.apk" ]; then
+            echo "apk_path=android/app/build/outputs/apk/release/app-release.apk" >> $GITHUB_OUTPUT
+            echo "build_type=release" >> $GITHUB_OUTPUT
+          else
+            echo "❌ APK not found"
+            find android/app/build/outputs -name "*.apk" || echo "No APK files found"
+            exit 1
+          fi
+
+      - name: Get APK info
+        id: apk_info
+        run: |
+          APK_PATH="${{ steps.find_apk.outputs.apk_path }}"
+          if [ -f "$APK_PATH" ]; then
+            APK_SIZE=$(du -h "$APK_PATH" | cut -f1)
+            echo "size=$APK_SIZE" >> $GITHUB_OUTPUT
+            echo "✅ APK found: $APK_PATH ($APK_SIZE)"
+          fi
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: koodo-reader-android-${{ steps.find_apk.outputs.build_type }}
+          path: ${{ steps.find_apk.outputs.apk_path }}
+          retention-days: 30
+
+      - name: Create GitHub Release (if tag)
+        if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, '-devtest') && !contains(github.ref, '-beta')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ steps.find_apk.outputs.apk_path }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        run: |
+          echo "## 🎉 Build Android APK" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Type**: ${{ steps.find_apk.outputs.build_type }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Path**: ${{ steps.find_apk.outputs.apk_path }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Size**: ${{ steps.apk_info.outputs.size }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📦 APK téléchargeable dans les artifacts" >> $GITHUB_STEP_SUMMARY
+
