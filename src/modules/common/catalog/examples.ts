@@ -5,7 +5,8 @@
  */
 
 import Book from '../../../models/Book';
-import { BookTypeDetector, BookType } from './BookTypeDetector';
+import { BookTypeDetector } from './BookTypeDetector';
+import { BookType } from './BookType';
 
 // Exemple 1 : Détecter le type d'un roman EPUB
 export function exampleNovelDetection() {

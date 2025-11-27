@@ -8,6 +8,8 @@ on:
 
 jobs:
   test:
+    # Ignore si [skip ci] ou [ci skip] dans le message de commit
+    if: "!contains(github.event.head_commit.message, '[skip ci]') && !contains(github.event.head_commit.message, '[ci skip]')"
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -44,6 +46,8 @@ jobs:
         if-no-files-found: ignore
 
   version-check:
+    # Ignore si [skip ci] ou [ci skip] dans le message de commit
+    if: "!contains(github.event.head_commit.message, '[skip ci]') && !contains(github.event.head_commit.message, '[ci skip]')"
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code

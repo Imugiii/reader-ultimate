@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test BookTypeDetector - Koodo Reader</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .test-section {
+            margin-bottom: 40px;
+        }
+
+        .test-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .book-input {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .book-input input {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .book-input input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .book-input select {
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+
+        .book-input select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 12px 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.2s;
+        }
+
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            background: #f8f9fa;
+            border-left: 5px solid #667eea;
+        }
+
+        .result h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .result-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+        }
+
+        .badge {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .badge-novel {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .badge-manga {
+            background: #FF9800;
+            color: white;
+        }
+
+        .badge-unknown {
+            background: #9E9E9E;
+            color: white;
+        }
+
+        .test-cases {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .test-case {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .test-case:hover {
+            border-color: #667eea;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+
+        .test-case h4 {
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .test-case p {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .info-box p {
+            color: #1976D2;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Test BookTypeDetector</h1>
+        <p class="subtitle">Détecteur automatique de type de livre (Novel / Manga)</p>
+
+        <div class="info-box">
+            <p><strong>📚 Comment ça marche :</strong> Le BookTypeDetector analyse le format du fichier, les métadonnées (nom, auteur, description) et détermine automatiquement si c'est un roman/webnovel ou un manga/webtoon.</p>
+        </div>
+
+        <div class="test-section">
+            <h2>Test Manuel</h2>
+            <div class="book-input">
+                <input type="text" id="bookName" placeholder="Nom du livre (ex: One Piece Tome 1)">
+                <input type="text" id="bookAuthor" placeholder="Auteur (ex: Eiichiro Oda)">
+                <select id="bookFormat">
+                    <option value="EPUB">EPUB</option>
+                    <option value="MOBI">MOBI</option>
+                    <option value="PDF">PDF</option>
+                    <option value="CBZ">CBZ</option>
+                    <option value="CBR">CBR</option>
+                    <option value="TXT">TXT</option>
+                    <option value="FB2">FB2</option>
+                </select>
+                <button onclick="testDetection()">🔍 Détecter</button>
+            </div>
+            <div id="manualResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Cas de Test Prédéfinis</h2>
+            <div class="test-cases" id="testCases"></div>
+        </div>
+    </div>
+
+    <script>
+        // Simulation du BookTypeDetector
+        const BookType = {
+            NOVEL: 'novel',
+            MANGA: 'manga',
+            UNKNOWN: 'unknown'
+        };
+
+        const BookFormat = {
+            EPUB: 'EPUB',
+            MOBI: 'MOBI',
+            AZW3: 'AZW3',
+            AZW: 'AZW',
+            TXT: 'TXT',
+            FB2: 'FB2',
+            HTML: 'HTML',
+            XHTML: 'XHTML',
+            MHTML: 'MHTML',
+            XML: 'XML',
+            MD: 'MD',
+            DOCX: 'DOCX',
+            CBZ: 'CBZ',
+            CBR: 'CBR',
+            CBT: 'CBT',
+            CB7: 'CB7',
+            PDF: 'PDF'
+        };
+
+        const FORMAT_TO_TYPE_MAP = {
+            [BookFormat.EPUB]: BookType.NOVEL,
+            [BookFormat.MOBI]: BookType.NOVEL,
+            [BookFormat.AZW3]: BookType.NOVEL,
+            [BookFormat.AZW]: BookType.NOVEL,
+            [BookFormat.TXT]: BookType.NOVEL,
+            [BookFormat.FB2]: BookType.NOVEL,
+            [BookFormat.HTML]: BookType.NOVEL,
+            [BookFormat.XHTML]: BookType.NOVEL,
+            [BookFormat.MHTML]: BookType.NOVEL,
+            [BookFormat.XML]: BookType.NOVEL,
+            [BookFormat.MD]: BookType.NOVEL,
+            [BookFormat.DOCX]: BookType.NOVEL,
+            [BookFormat.CBZ]: BookType.MANGA,
+            [BookFormat.CBR]: BookType.MANGA,
+            [BookFormat.CBT]: BookType.MANGA,
+            [BookFormat.CB7]: BookType.MANGA,
+            [BookFormat.PDF]: BookType.UNKNOWN
+        };
+
+        function detectFromFormat(format) {
+            const formatUpper = format.toUpperCase();
+            const mappedType = FORMAT_TO_TYPE_MAP[formatUpper];
+            if (mappedType && mappedType !== BookType.UNKNOWN) {
+                return mappedType;
+            }
+            if (formatUpper.startsWith('CB')) {
+                return BookType.MANGA;
+            }
+            const textFormats = ['EPUB', 'MOBI', 'AZW3', 'AZW', 'TXT', 'FB2', 'HTML', 'XHTML', 'MHTML', 'XML', 'MD', 'DOCX'];
+            if (textFormats.includes(formatUpper)) {
+                return BookType.NOVEL;
+            }
+            if (formatUpper === 'PDF') {
+                return BookType.UNKNOWN;
+            }
+            return BookType.UNKNOWN;
+        }
+
+        function detectFromMetadata(name, author, description) {
+            const nameLower = (name || '').toLowerCase();
+            const authorLower = (author || '').toLowerCase();
+            const descLower = (description || '').toLowerCase();
+
+            const mangaKeywords = ['manga', 'webtoon', 'manhwa', 'manhua', 'comic', 'bande dessinée', 'bd', 'graphic novel', 'scan', 'scanlation'];
+            const novelKeywords = ['novel', 'roman', 'light novel', 'webnovel', 'fiction', 'littérature', 'book', 'livre', 'story', 'histoire'];
+
+            const allText = `${nameLower} ${authorLower} ${descLower}`;
+
+            for (const keyword of mangaKeywords) {
+                if (allText.includes(keyword)) {
+                    return BookType.MANGA;
+                }
+            }
+
+            for (const keyword of novelKeywords) {
+                if (allText.includes(keyword)) {
+                    return BookType.NOVEL;
+                }
+            }
+
+            return null;
+        }
+
+        function detectBookType(book) {
+            // 1. Détection basée sur le format
+            const formatType = detectFromFormat(book.format);
+            if (formatType !== BookType.UNKNOWN) {
+                return formatType;
+            }
+
+            // 2. Détection basée sur les métadonnées
+            const metadataType = detectFromMetadata(book.name, book.author, book.description);
+            if (metadataType) {
+                return metadataType;
+            }
+
+            // 3. Pour PDF et cas indéterminés, on retourne NOVEL par défaut
+            if (book.format.toUpperCase() === 'PDF') {
+                return BookType.NOVEL;
+            }
+
+            return BookType.NOVEL;
+        }
+
+        function testDetection() {
+            const name = document.getElementById('bookName').value;
+            const author = document.getElementById('bookAuthor').value;
+            const format = document.getElementById('bookFormat').value;
+
+            if (!name) {
+                alert('Veuillez entrer un nom de livre');
+                return;
+            }
+
+            const book = {
+                name: name,
+                author: author || '',
+                format: format,
+                description: ''
+            };
+
+            const detectedType = detectBookType(book);
+            const formatType = detectFromFormat(format);
+            const metadataType = detectFromMetadata(name, author, '');
+
+            const resultDiv = document.getElementById('manualResult');
+            resultDiv.innerHTML = `
+                <div class="result">
+                    <h3>📖 Résultat de la détection</h3>
+                    <div class="result-item">
+                        <strong>Type détecté :</strong>
+                        <span class="badge badge-${detectedType}">${detectedType.toUpperCase()}</span>
+                    </div>
+                    <div class="result-item">
+                        <strong>Détection par format :</strong>
+                        <span class="badge badge-${formatType}">${formatType.toUpperCase()}</span>
+                    </div>
+                    <div class="result-item">
+                        <strong>Détection par métadonnées :</strong>
+                        <span class="badge badge-${metadataType || 'unknown'}">${metadataType ? metadataType.toUpperCase() : 'NON DÉTECTÉ'}</span>
+                    </div>
+                    <div class="result-item">
+                        <strong>Format :</strong> ${format}
+                    </div>
+                    <div class="result-item">
+                        <strong>Nom :</strong> ${name}
+                    </div>
+                    ${author ? `<div class="result-item"><strong>Auteur :</strong> ${author}</div>` : ''}
+                </div>
+            `;
+        }
+
+        const testCases = [
+            { name: 'One Piece Tome 1', author: 'Eiichiro Oda', format: 'CBZ', expected: 'manga' },
+            { name: 'Naruto Vol. 1', author: 'Masashi Kishimoto', format: 'CBR', expected: 'manga' },
+            { name: 'Harry Potter', author: 'J.K. Rowling', format: 'EPUB', expected: 'novel' },
+            { name: 'Le Seigneur des Anneaux', author: 'J.R.R. Tolkien', format: 'MOBI', expected: 'novel' },
+            { name: 'Solo Leveling', author: 'Chugong', format: 'EPUB', expected: 'novel' },
+            { name: 'Attack on Titan', author: 'Hajime Isayama', format: 'CBZ', expected: 'manga' },
+            { name: 'The Witcher', author: 'Andrzej Sapkowski', format: 'PDF', expected: 'novel' },
+            { name: 'Berserk Tome 1', author: 'Kentaro Miura', format: 'CBR', expected: 'manga' },
+            { name: '1984', author: 'George Orwell', format: 'TXT', expected: 'novel' },
+            { name: 'Death Note', author: 'Tsugumi Ohba', format: 'CBZ', expected: 'manga' },
+            { name: 'Dune', author: 'Frank Herbert', format: 'EPUB', expected: 'novel' },
+            { name: 'Demon Slayer', author: 'Koyoharu Gotouge', format: 'CBZ', expected: 'manga' }
+        ];
+
+        function loadTestCases() {
+            const container = document.getElementById('testCases');
+            testCases.forEach(testCase => {
+                const div = document.createElement('div');
+                div.className = 'test-case';
+                div.onclick = () => {
+                    document.getElementById('bookName').value = testCase.name;
+                    document.getElementById('bookAuthor').value = testCase.author;
+                    document.getElementById('bookFormat').value = testCase.format;
+                    testDetection();
+                };
+                div.innerHTML = `
+                    <h4>${testCase.name}</h4>
+                    <p><strong>Auteur:</strong> ${testCase.author}</p>
+                    <p><strong>Format:</strong> ${testCase.format}</p>
+                    <p><strong>Type attendu:</strong> <span class="badge badge-${testCase.expected}">${testCase.expected.toUpperCase()}</span></p>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Charger les cas de test au chargement de la page
+        window.onload = () => {
+            loadTestCases();
+        };
+
+        // Permettre d'appuyer sur Entrée pour tester
+        document.getElementById('bookName').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') testDetection();
+        });
+        document.getElementById('bookAuthor').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') testDetection();
+        });
+    </script>
+</body>
+</html>
+

@@ -193,12 +193,24 @@ export function handleFetchPlugins() {
 export function handleFetchAuthed() {
   return (dispatch: Dispatch) => {
     try {
+      // En développement, activer automatiquement la version Pro
+      // Pour désactiver, définir REACT_APP_DISABLE_PRO=true dans .env
+      if (process.env.NODE_ENV === 'development' && process.env.REACT_APP_DISABLE_PRO !== 'true') {
+        console.log('[DEV] Version Pro activée automatiquement pour le développement');
+        dispatch(handleAuthed(true));
+        return;
+      }
+      
       TokenService.getToken("is_authed").then((value) => {
         let isAuthed = value === "yes";
         dispatch(handleAuthed(isAuthed));
       });
     } catch (error) {
       console.error(error);
+      // En cas d'erreur en développement, activer quand même la version Pro
+      if (process.env.NODE_ENV === 'development' && process.env.REACT_APP_DISABLE_PRO !== 'true') {
+        dispatch(handleAuthed(true));
+      }
     }
   };
 }

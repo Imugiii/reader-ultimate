@@ -4,6 +4,7 @@ import Manager from "../pages/manager";
 import Login from "../pages/login";
 import HtmlReader from "../pages/reader";
 import _Redirect from "../pages/redirect";
+import TestBookTypePage from "../pages/test";
 import i18n from "../i18n";
 import { ConfigService } from "../assets/lib/kookit-extra-browser.min";
 
@@ -150,6 +151,7 @@ const Router = () => {
         <Route component={HtmlReader} path="/mhtml" />
         <Route component={HtmlReader} path="/href" />
         <Route component={HtmlReader} path="/pdf" />
+        <Route component={TestBookTypePage} path="/test/booktype" />
         <Route component={_Redirect} path="/" />
       </Switch>
     </HashRouter>

@@ -10,7 +10,9 @@ const initState = {
   isAboutOpen: false,
   isBookSort: ConfigService.getReaderConfig("bookSortCode") ? true : false,
   isNoteSort: false,
-  isAuthed: false,
+  // En développement, activer la version Pro par défaut
+  // Pour désactiver, mettre à false ou définir REACT_APP_DISABLE_PRO=true
+  isAuthed: process.env.NODE_ENV === 'development' && process.env.REACT_APP_DISABLE_PRO !== 'true',
   userInfo: null,
   userConfig: null,
   isSettingOpen: false,
